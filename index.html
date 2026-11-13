@@ -580,7 +580,7 @@ html.dl-ok .xbtn{display:inline-flex}
       <div class="topsup" id="bwtopsup"></div>
     </div>
 
-    <div class="secttl"><h2>Lojas &times; top 12 da rede</h2><span class="hint">% dos atendimentos da loja que levaram cada campeão &mdash; e onde ele não vende</span><span class="rule"></span></div>
+    <div class="secttl"><h2>Lojas &times; top 20 da rede</h2><span class="hint">% dos atendimentos da loja que levaram cada campeão &mdash; e onde ele não vende</span><span class="rule"></span></div>
     <div class="prodcard">
       <div class="prodhead"><span class="t">Mapa de lacunas</span><span class="m" id="bwmxsum"></span><button class="exportbtn xbtn" data-x="bw-matrix" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Exportar Excel</button></div>
       <div class="ctrls"><label>Supervisora</label><div id="mxsupbar" style="display:contents"></div></div>
@@ -1462,12 +1462,12 @@ XP['bw-topsup']=()=>{const T=lastBW.topsup;if(!T)return null;
     head:['Supervisora','Posicao','Agrupador','Produto','Marca','Categoria','Onda','Unidades','Cupons','Lojas vendendo','Valor (R$)','% Desconto BW','Destaque top 10'],
     widths:[12,8,10,40,14,18,20,10,9,8,12,13,14],money:[10],pct:[11],rows}]};};
 
-/* mapa lojas x top 12 - celula = % dos atendimentos da loja com o item (cupons com o item / atendimentos) (Douglas, 06/11) */
+/* mapa lojas x top 20 (era top 12; Douglas 13/11) - celula = % dos atendimentos da loja com o item (cupons com o item / atendimentos) (Douglas, 06/11) */
 let mxSup='';
 function renderMatrix(){
   const {PA,dates,T}=BWC;
   document.getElementById('mxsupbar').innerHTML=['',...RAW.sup_order].map(s=>`<button class="dchip${s===mxSup?' on':''}" type="button" data-s="${s}">${s||'Rede toda'}</button>`).join('');
-  const top=lastBW.rede.filter(r=>r.q>0).sort((a,b)=>b.q-a.q||b.v-a.v).slice(0,12);
+  const top=lastBW.rede.filter(r=>r.q>0).sort((a,b)=>b.q-a.q||b.v-a.v).slice(0,20);
   const so=RAW.sup_order;
   const lojas=BWC.lojas.filter(l=>!mxSup||l.superv===mxSup).sort((a,b)=>so.indexOf(a.superv)-so.indexOf(b.superv)||b.w-a.w);
   const part=(n,a)=>a?100*n/a:0;
@@ -1501,7 +1501,7 @@ function renderMatrix(){
 }
 XP['bw-matrix']=()=>{const M=lastBW.matrix;if(!M||!M.top.length)return null;
   const nm=M.top.map((p,i)=>(i+1)+'. '+p.nome), pcols=M.top.map((_,i)=>i+3);
-  return {base:'bw-lojas-x-top12_'+(M.sup?M.sup+'_':'')+bwPeriodoArq(),periodo:bwPeriodoTxt()+' - % = cupons com o item / atendimentos da loja',sheets:[
+  return {base:'bw-lojas-x-top20_'+(M.sup?M.sup+'_':'')+bwPeriodoArq(),periodo:bwPeriodoTxt()+' - % = cupons com o item / atendimentos da loja',sheets:[
     {name:'% dos atendimentos',head:['Supervisora','Loja','Atendimentos'].concat(nm).concat(['Lacunas']),
      widths:[12,22,12].concat(M.top.map(()=>16)).concat([9]),pct:pcols,
      rows:[['REDE','',M.Ta].concat(M.redeP.map(x=>+(x/100).toFixed(4))).concat([''])].concat(M.exp)},
