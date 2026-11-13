@@ -582,7 +582,7 @@ html.dl-ok .xbtn{display:inline-flex}
 
     <div class="secttl"><h2>Lojas &times; top 20 da rede</h2><span class="hint">% dos atendimentos da loja que levaram cada campeão &mdash; e onde ele não vende</span><span class="rule"></span></div>
     <div class="prodcard">
-      <div class="prodhead"><span class="t">Mapa de lacunas</span><span class="m" id="bwmxsum"></span><button class="exportbtn xbtn" data-x="bw-matrix" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Exportar Excel</button></div>
+      <div class="prodhead"><span class="t">Mapa de lacunas</span><span class="m" id="bwmxsum"></span><button class="exportbtn xbtn" data-x="bw-matrix" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Exportar Excel</button><button class="exportbtn xbtn" data-pdf="bw-matrix" type="button" style="margin-left:8px"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Exportar PDF</button></div>
       <div class="ctrls"><label>Supervisora</label><div id="mxsupbar" style="display:contents"></div></div>
       <div class="mxleg" id="bwmxleg"></div>
       <div class="mxwrap" id="bwmatrix"></div>
@@ -1508,6 +1508,126 @@ XP['bw-matrix']=()=>{const M=lastBW.matrix;if(!M||!M.top.length)return null;
     {name:'Unidades',head:['Supervisora','Loja'].concat(nm),widths:[12,22].concat(M.top.map(()=>16)),rows:M.expU},
     {name:'Legenda',head:['#','Agrupador','Produto','% dos atend. rede','Unidades rede','Valor rede (R$)','% Desconto BW'],widths:[4,10,40,14,12,14,13],money:[5],pct:[3,6],
      rows:M.top.map((p,i)=>[i+1,p.a,p.nome,+(M.redeP[i]/100).toFixed(4),p.q,+p.v.toFixed(2),dcX(p.dc)])}]};};
+
+/* PDF do mapa de lacunas: 1 pagina A4 deitada por supervisora, todas as colunas e lojas (Douglas 13/11) */
+let jspdfP=null;
+function loadJsPDF(){ if(window.jspdf) return Promise.resolve(); if(jspdfP) return jspdfP;
+  jspdfP=new Promise((ok,ko)=>{const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload=ok; sc.onerror=()=>{jspdfP=null; ko(new Error('jspdf'));}; document.head.appendChild(sc);});
+  return jspdfP; }
+function matrixPDF(){
+  const M=lastBW.matrix; if(!M||!M.top.length) return null;
+  const {PA,T}=BWC, top=M.top, redeP=M.redeP;
+  const part=(n,a)=>a?100*n/a:0;
+  const sups=(M.sup?[M.sup]:RAW.sup_order).filter(s=>BWC.lojas.some(l=>l.superv===s));
+  if(!sups.length) return null;
+  const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=297,H=210,mg=8,LW=38,NW=12,CW=(W-2*mg-LW-NW)/top.length;
+  const GOLD=[201,154,46],WARN=[192,57,43],BLUE=[12,159,230],BSOFT=[232,245,252],INK=[33,43,54],FAINT=[120,134,148],LINE=[219,230,239],GRY=[236,240,244];
+  const mix=(c,a)=>c.map(v=>Math.round(255-(255-v)*a));
+  const fP=x=>x.toFixed(1).replace('.',',')+'%';
+  const fI=n=>Math.round(n).toLocaleString('pt-BR');
+  const per=bwPeriodoTxt().replace(' - so dentro',' - só dentro');
+  const now=new Date(), stamp=now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const cx=j=>mg+LW+j*CW;
+  sups.forEach((sup,pi)=>{
+    if(pi) doc.addPage();
+    const lojas=BWC.lojas.filter(l=>l.superv===sup).sort((a,b)=>b.w-a.w);
+    const colmax=top.map(p=>Math.max(0.1,...lojas.map(l=>{const t=(PA[p.a]||{})[l.code];return t?part(t.n,l.a):0;})));
+    const sa=lojas.reduce((t,l)=>t+l.a,0);
+    /* faixa do titulo */
+    doc.setFillColor(...BLUE); doc.rect(0,0,W,17,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Beauty Week 2026 - Lojas × top 20 da rede',mg,7.6);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text('% dos atendimentos da loja que levaram cada produto (cupons com o item / atendimentos) - '+per,mg,12.8);
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text(sup,W-mg,8,{align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.text(lojas.length+' lojas - '+fI(sa)+' atendimentos - estoque de '+BW.stock_data,W-mg,12.8,{align:'right'});
+    /* cabecalho da tabela */
+    let y=20; const HH=17, y0=y;
+    doc.setFillColor(...GRY); doc.rect(mg,y,W-2*mg,HH,'F');
+    doc.setTextColor(...FAINT); doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.text('Loja',mg+1.5,y+HH-2);
+    top.forEach((p,j)=>{ const x=cx(j)+CW/2;
+      doc.setTextColor(...INK); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text(String(j+1),x,y+3.6,{align:'center'});
+      doc.setTextColor(...FAINT); doc.setFont('helvetica','normal'); doc.setFontSize(4.6);
+      let ln=doc.splitTextToSize(p.nome,CW-1.2); if(ln.length>4){ ln=ln.slice(0,4); ln[3]=ln[3].replace(/.{0,2}$/,'..'); }
+      ln.forEach((t,k)=>doc.text(t,x,y+6.6+k*2.1,{align:'center'})); });
+    doc.setTextColor(...FAINT); doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.text('Lacunas',W-mg-NW/2,y+HH-2,{align:'center'});
+    y+=HH;
+    const LEG=36, nRows=lojas.length+2;
+    const RH=Math.min(8.2,(H-mg-LEG-y)/nRows);
+    const fs=Math.min(7,RH*0.95);
+    const totRow=(label,sub,vals,fill)=>{
+      doc.setFillColor(...fill); doc.rect(mg,y,W-2*mg,RH,'F');
+      doc.setTextColor(...INK); doc.setFont('helvetica','bold'); doc.setFontSize(fs); doc.text(label,mg+1.5,y+RH/2+1.1);
+      const lw=doc.getTextWidth(label); doc.setFont('helvetica','normal'); doc.setFontSize(fs*0.75); doc.setTextColor(...FAINT); doc.text(sub,mg+2.5+lw,y+RH/2+1.1);
+      doc.setTextColor(...INK); doc.setFont('helvetica','bold'); doc.setFontSize(fs);
+      vals.forEach((v,j)=>doc.text(fP(v),cx(j)+CW/2,y+RH/2+1.1,{align:'center'}));
+      doc.setDrawColor(...LINE); doc.line(mg,y+RH,W-mg,y+RH); y+=RH; };
+    totRow('REDE',fI(T.a)+' atend.',redeP,[255,255,255]);
+    totRow(sup,fI(sa)+' atend.',top.map(p=>part(lojas.reduce((t,l)=>{const x=(PA[p.a]||{})[l.code];return t+(x?x.n:0);},0),sa)),BSOFT);
+    const yG=y;
+    lojas.forEach(l=>{
+      let gaps=0;
+      doc.setTextColor(...INK); doc.setFont('helvetica','normal'); doc.setFontSize(fs);
+      const nm=l.loja; doc.text(nm,mg+1.5,y+RH/2+1.1);
+      const lw=doc.getTextWidth(nm); doc.setFontSize(fs*0.7); doc.setTextColor(...FAINT); doc.text(fI(l.a)+' at.',mg+2.5+lw,y+RH/2+1.1);
+      top.forEach((p,j)=>{ const t=(PA[p.a]||{})[l.code], q=t?t.q:0, n=t?t.n:0, x=part(n,l.a), X=cx(j), mid=X+CW/2;
+        if(q>0){ const al=(12+58*x/colmax[j])/100; doc.setFillColor(...mix(GOLD,al)); doc.rect(X,y,CW,RH,'F');
+          const low=x<redeP[j]/2; doc.setTextColor(...(low?WARN:INK)); doc.setFont('helvetica','bold'); doc.setFontSize(fs);
+          doc.text(fP(x),mid,y+RH/2+1.1,{align:'center'}); return; }
+        gaps++; const st=BW.stock[p.a]&&BW.stock[p.a][l.code]; const hs=st&&st[0]>0, tr=st?st[1]:0;
+        if(hs){ doc.setFillColor(...WARN); doc.rect(X,y,CW,RH,'F'); doc.setTextColor(255,255,255);
+          doc.setFont('helvetica','bold'); doc.setFontSize(fs); doc.text('0',mid,y+RH*0.45,{align:'center'});
+          doc.setFont('helvetica','normal'); doc.setFontSize(fs*0.68); doc.text('tem '+fI(st[0]),mid,y+RH*0.85,{align:'center'}); }
+        else { doc.setFillColor(...GRY); doc.rect(X,y,CW,RH,'F'); doc.setTextColor(...FAINT); doc.setFont('helvetica','normal');
+          doc.setFontSize(fs*0.72); doc.text('sem est.',mid,y+(tr?RH*0.45:RH/2+0.9),{align:'center'});
+          if(tr){ doc.setFontSize(fs*0.66); doc.text('chega '+fI(tr),mid,y+RH*0.85,{align:'center'}); } }
+      });
+      doc.setFont('helvetica','bold'); doc.setFontSize(fs); doc.setTextColor(...(gaps>=6?WARN:INK));
+      doc.text(String(gaps),W-mg-NW/2,y+RH/2+1.1,{align:'center'});
+      doc.setDrawColor(...LINE); doc.line(mg,y+RH,W-mg,y+RH); y+=RH;
+    });
+    /* grade vertical leve entre as colunas de produto */
+    doc.setDrawColor(255,255,255); doc.setLineWidth(0.3);
+    for(let j=0;j<=top.length;j++) doc.line(cx(j),yG,cx(j),y);
+    doc.setLineWidth(0.2);
+    /* legenda: produtos */
+    y+=4; doc.setTextColor(...INK); doc.setFont('helvetica','bold'); doc.setFontSize(6.8); doc.text('Produtos (posição no top 20 da rede)',mg,y);
+    y+=3.2; const cols=3, colW=(W-2*mg)/cols, perC=Math.ceil(top.length/cols);
+    doc.setFontSize(5.6);
+    top.forEach((p,i)=>{ const c=Math.floor(i/perC), r=i%perC, x=mg+c*colW, yy=y+r*2.75;
+      doc.setFont('helvetica','bold'); doc.setTextColor(...INK); const k=(i+1)+'  '; doc.text(k,x,yy);
+      const kw=doc.getTextWidth(k); doc.setFont('helvetica','normal');
+      let t=p.nome+'  (rede '+fP(redeP[i])+' - '+fI(p.q)+' un'+(p.dc?' - '+fP(p.dc)+' desc.':'')+')';
+      while(doc.getTextWidth(t)>colW-kw-2 && t.length>10) t=t.slice(0,-2);
+      doc.text(t,x+kw,yy); });
+    y+=perC*2.75+1.5;
+    /* legenda: cores */
+    doc.setFontSize(6); let lx=mg;
+    const key=(fill,txt,bold)=>{ if(fill){doc.setFillColor(...fill); doc.rect(lx,y-2.3,3,3,'F'); lx+=4;}
+      doc.setFont('helvetica',bold?'bold':'normal'); doc.setTextColor(...INK); doc.text(txt,lx,y); lx+=doc.getTextWidth(txt)+6; };
+    key(mix(GOLD,0.55),'vendeu (mais escuro = maior %)');
+    doc.setTextColor(...WARN); doc.setFont('helvetica','bold'); doc.text('x%',lx,y); lx+=doc.getTextWidth('x%')+1.2; key(null,'abaixo da metade da média da rede');
+    key(WARN,'não vendeu e TEM estoque (cobrar exposição/venda)',true);
+    key(GRY,'sem est. = não vendeu porque não tem estoque ("chega" = em trânsito)');
+    /* rodape */
+    doc.setFontSize(5.8); doc.setTextColor(...FAINT); doc.setFont('helvetica','normal');
+    doc.text('Análise de Campanhas - Sfera Multifranquias - gerado em '+stamp,mg,H-4);
+    doc.text('Página '+(pi+1)+' de '+sups.length,W-mg,H-4,{align:'right'});
+  });
+  const name='bw-lojas-x-top20_'+(M.sup?M.sup+'_':'')+bwPeriodoArq()+'.pdf';
+  return {filename:name,data:doc.output('blob')};
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('[data-pdf]'); if(!b||xbusy) return;
+  xbusy=true; b.disabled=true;
+  try{ const dl=await claude.use('downloads'); if(!dl){ toast('Exportacao indisponivel nesta visualizacao.'); return; }
+    await loadJsPDF(); const f=matrixPDF(); if(!f){ toast('Nada para exportar nesse filtro.'); return; }
+    const r=await dl.save(f); toast(r&&r.status==='saved'?'Arquivo enviado: '+f.filename:'Arquivo entregue.'); }
+  catch(err){ toast(MSG[err&&err.code]||'Nao foi possivel gerar o PDF agora.'); }
+  finally{ xbusy=false; b.disabled=false; }
+});
 
 document.getElementById('mxsupbar').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(!b)return;mxSup=b.dataset.s||'';renderMatrix();});
 
