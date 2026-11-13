@@ -382,7 +382,7 @@ html.dl-ok .xbtn{display:inline-flex}
         <path d="M17 19v-3a7 7 0 0 1 14 0v3" fill="none" stroke="var(--blue)" stroke-width="2.4" stroke-linecap="round"/>
         <path d="M24 26.5l1.9 3.9 4.3.6-3.1 3 .7 4.3-3.8-2-3.8 2 .7-4.3-3.1-3 4.3-.6 1.9-3.9Z" fill="var(--gold)"/>
       </svg>
-      <div class="wordmark"><h1 id="brandTitle">Sacola Premiada</h1><span class="sub" id="brandSub">Campanha Sacola Surpresa</span></div>
+      <div class="wordmark"><h1 id="brandTitle">Sacola Ciclo 15</h1><span class="sub" id="brandSub">Sacola Surpresa - 19/10 a 04/11</span></div>
     </div>
     <div class="spacer"></div>
     <div class="sfera" aria-label="Sfera multifranquias"><span class="wm">sfera</span><span class="tag">multifranquias</span></div>
@@ -392,7 +392,7 @@ html.dl-ok .xbtn{display:inline-flex}
 
 <main class="wrap">
   <div class="tabs" id="tabs">
-    <button class="tab on" data-v="sacola" type="button">Sacola Premiada</button>
+    <button class="tab on" data-v="sacola" type="button">Sacola Ciclo 15</button>
     <button class="tab" data-v="sacola16" type="button">Sacola Ciclo 16<span class="launchtag">16/11</span></button>
     <button class="tab" data-v="lily" type="button">Lily Elixir</button>
     <button class="tab" data-v="bw" type="button">Beauty Week<span class="launchtag">BW</span></button>
@@ -820,7 +820,7 @@ function setSC(c){
   SC = c; SLD = c==='c16' ? S16.dates.slice() : RAW.dates.filter(slOk); DAYS = SLD;
   document.getElementById('ndate').textContent = SLD.map(ddmm).join(' e ') || '-';
   document.getElementById('sacLead').innerHTML = c==='c16'
-    ? `Campanha <b>Sacola Surpresa - Ciclo 16</b> (${ddmm(S16.ini)} a ${ddmm(S16.fim)}), separada da campanha anterior. Sacola = cupom com <b>3 a 4 itens da lista do book</b> (${int(S16.nsku)} SKUs); um cupom pode ter mais de uma sacola. Venda e pecas somam os itens da lista no cupom.`
+    ? `Campanha <b>Sacola Surpresa - Ciclo 16</b> (${ddmm(S16.ini)} a ${ddmm(S16.fim)}), separada do Ciclo 15. Sacola = cupom com <b>3 a 4 itens da lista do book</b> (${int(S16.nsku)} SKUs); um cupom pode ter mais de uma sacola. Venda e pecas somam os itens da lista no cupom.`
     : LEAD15;
   document.getElementById('noteSac').innerHTML = c==='c16'
     ? `<b>Sacola surpresa (Ciclo 16)</b> = cupom com <b>3 ou mais itens efetivados da lista do book</b> "Sacola Surpresa - Ciclo 16" (${int(S16.nsku)} SKUs, Boticario + QDB), de ${ddmm(S16.ini)} a ${ddmm(S16.fim)}. Nº de sacolas = por cupom, <b>floor(itens da lista / 3)</b>: 3 ou 4 itens = 1 sacola, 6 itens = 2. Cupom com menos de 3 itens da lista nao forma sacola. <b>% desconto</b> na tabela de produtos = desconto real (1 - valor vendido / preco cheio).`
@@ -2204,7 +2204,7 @@ XP['oui-sortimento']=()=>lastOUI.sort&&{base:'oui-sortimento-faltando-norte2',pe
   lastOUI.sort.map((g,i)=>[i+1,g.sku,g.nome,g.cat,g.fase,g.n,g.u,g.sold]),{widths:[5,8,40,20,11,12,12,10]})]};
 
 /* ---- abas ---- */
-const TABS={sacola:['Sacola Premiada','Campanha Sacola Surpresa'],sacola16:['Sacola Premiada - Ciclo 16','Sacola Surpresa - 16/11 a 30/11'],lily:['Lily Elixir','Lancamento 23/10'],bw:['Beauty Week','BW 2026 - 03/11 a 30/11'],canal:['Canal de venda','Salão - Omni - iFood'],oui:['OUI','Lançamento Norte 2 - desde 30/10']};
+const TABS={sacola:['Sacola Ciclo 15','Sacola Surpresa - 19/10 a 04/11'],sacola16:['Sacola Ciclo 16','Sacola Surpresa - 16/11 a 30/11'],lily:['Lily Elixir','Lancamento 23/10'],bw:['Beauty Week','BW 2026 - 03/11 a 30/11'],canal:['Canal de venda','Salão - Omni - iFood'],oui:['OUI','Lançamento Norte 2 - desde 30/10']};
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;
   const v=b.dataset.v;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
