@@ -305,6 +305,14 @@ footer{color:var(--faint);font-size:.74rem;text-align:center;margin-top:26px}
 .tgl{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted);cursor:pointer;margin-left:4px}
 .tgl input{accent-color:var(--blue);width:15px;height:15px}
 .kpis2 .kpi .big{font-size:1.5rem}
+.shbar{position:relative;height:12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);margin-top:10px;overflow:visible}
+.shbar>span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--gold),var(--gold-ink))}
+.shbar>span.ok{background:linear-gradient(90deg,#43b97f,var(--ok))}
+.shbar>i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);border-radius:2px}
+.kpi.shok{border-color:var(--ok)} .kpi.shbad{border-color:var(--warn)}
+.shst{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:99px;margin-top:6px}
+.shst.ok{background:var(--ok-soft);color:var(--ok)} .shst.bad{background:var(--warn-soft);color:var(--warn)}
+
 .wavegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
 .wave{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
 .wave.live{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset,var(--shadow)}
@@ -765,6 +773,8 @@ html.dl-ok .xbtn{display:inline-flex}
 
     <div class="kpis" id="ouikpis"></div>
     <div class="kpis kpis2" id="ouikpis2"></div>
+    <div class="secttl"><h2>Share da marca &times; meta do book</h2><span class="hint">share = venda OUI ÷ venda total da loja &middot; meta = 3,8% do GMV (piloto Projeto Rouge, live 26/10)</span><span class="rule"></span></div>
+    <div class="kpis" id="ouishare"></div>
 
     <div class="secttl"><h2>Antes &times; depois do lançamento</h2><span class="hint">média por dia &mdash; não depende do filtro de dias</span><span class="rule"></span></div>
     <div class="prodcard"><div class="prodscroll"><table class="ptab" id="ouiab"></table></div></div>
@@ -851,6 +861,7 @@ html.dl-ok .xbtn{display:inline-flex}
         <li><b>Ticket do cupom com OUI</b> = valor total do cupom (OUI + outras marcas). Comparado com o ticket dos cupons <b>sem</b> OUI da mesma loja.</li>
         <li><b>Cesta</b> ignora sacolas, papel de seda e brindes (itens abaixo de R$ 1). "Com promoção OUI" = item com a campanha "[CAT. 05] itens selecionados de OUI com até 17% de desconto".</li>
         <li><b>Cobertura</b> = (estoque + trânsito) / média diária vendida no período. <b>Parado</b> = tem estoque e não vendeu no período. <b>Zerou</b> = vendeu e não tem estoque nem trânsito.</li>
+        <li><b>Share</b> = venda OUI ÷ venda total da loja no período (receita líquida). <b>Meta</b> = 3,8% do GMV, o share de O.U.i nas lojas do piloto (book Projeto Rouge, live 26/10). <b>Falta para a meta</b> = venda da loja × 3,8% − venda OUI; os cupons a mais usam o valor de OUI por cupom da própria loja.</li>
         <li><b>Lojas que já vendem OUI</b> = lojas com 5 ou mais SKUs OUI em estoque (Raul Soares, Além Paraíba, Aimorés) e outras que venderam OUI no período.</li>
       </ul>
     </div>
@@ -2210,6 +2221,22 @@ function renderOUI(){
     <div class="kpi"><div class="lab">Cupons só com OUI</div><div class="big num">${S.n?pc(pct(S.only,S.n)):'-'}</div><div class="foot">${int(S.n-S.only)} cupons levaram outra marca junto</div></div>
     <div class="kpi"><div class="lab">Venda com promoção OUI</div><div class="big num">${S.v?pc(pct(S.promo,S.v)):'-'}</div><div class="foot">campanha [CAT. 05] até 17% off</div></div>`;
 
+  // share x meta do book (3,8% do GMV)
+  const META_SH=3.8, BM_BOOK=308;
+  const sh=pct(S.v,T.v), ating=sh/META_SH*100, shGap=Math.max(0,T.v*META_SH/100-S.v), ok=sh>=META_SH;
+  const opc=S.n? S.v/S.n : BM_BOOK, cupX=shGap/opc;
+  const selD=[...sel].filter(d=>(OUI.ld[L]||{})[d]&&OUI.ld[L][d][0]).sort((a,b)=>ODN(a)-ODN(b));
+  const last7=new Set(selD.slice(-7)), prev7=new Set(selD.slice(-14,-7));
+  const sh7=(()=>{const t=ouiLoja(L,last7), s7=ouiStats(ouiCups(L,last7)); return t.v? pct(s7.v,t.v) : 0;})();
+  const shP=(()=>{const t=ouiLoja(L,prev7), s7=ouiStats(ouiCups(L,prev7)); return t.v&&prev7.size? pct(s7.v,t.v) : null;})();
+  const bar=(v)=>`<div class="shbar"><span class="${v>=META_SH?'ok':''}" style="width:${Math.min(100,v/ (META_SH*1.5)*100).toFixed(1)}%"></span><i style="left:${(100/1.5).toFixed(1)}%" title="meta 3,8%"></i></div>`;
+  document.getElementById('ouishare').innerHTML=`
+    <div class="kpi camp ${ok?'shok':'shbad'}"><div class="lab">Share OUI no período</div><div class="big num">${pc(sh)}</div>${bar(sh)}<div class="foot">meta do book: <b>3,8%</b> do GMV da loja &middot; <span class="shst ${ok?'ok':'bad'}">${ok?'NA META':'ABAIXO DA META'}</span></div></div>
+    <div class="kpi ${ok?'shok':'shbad'}"><div class="lab">Atingimento da meta</div><div class="big num" style="color:${ok?'var(--ok)':'var(--warn)'}">${pc(ating)}</div><div class="foot">${pc(sh)} de share ÷ 3,8% da meta</div></div>
+    <div class="kpi"><div class="lab">Falta para a meta</div><div class="big num">${shGap?brl0(shGap):'-'}</div><div class="foot">${shGap?`no período (${nd} dias) &middot; ~${(cupX).toLocaleString('pt-BR',{maximumFractionDigits:0})} cupons com OUI a mais (${(cupX/nd).toLocaleString('pt-BR',{maximumFractionDigits:1})}/dia, R$ ${Math.round(opc)} de OUI por cupom)`:'share no patamar do piloto'}</div></div>
+    <div class="kpi"><div class="lab">Share dos últimos 7 dias</div><div class="big num" style="color:${sh7>=META_SH?'var(--ok)':'var(--fg)'}">${pc(sh7)}</div>${bar(sh7)}<div class="foot">${[...last7].length?`${ddmm(selD.slice(-7)[0])} a ${ddmm(selD[selD.length-1])}`:''}${shP!=null?` &middot; 7 dias anteriores: ${pc(shP)} ${sh7>shP?'&#9650;':sh7<shP?'&#9660;':''}`:''}</div></div>`;
+  lastOUI.share={sh,ating,shGap,cupX,sh7,shP,v:S.v,tv:T.v,nd};
+
   // antes x depois (fixo)
   const per=[['Antes de 30/10',new Set(OD.filter(d=>ODN(d)<OINI))],['Desde o lançamento (30/10)',new Set(OD.filter(d=>ODN(d)>=OINI))]].map(([lab,ss])=>{
     const t=ouiLoja(L,ss), st=ouiStats(ouiCups(L,ss)), n=t.d||1;
@@ -2294,8 +2321,8 @@ function renderOUI(){
   const lj=[L,...outros].map(code=>{ const t=ouiLoja(code,sel), st=ouiStats(ouiCups(code,sel)), so=OUI.stock[code]||{};
     const ks=Object.values(so).filter(x=>x[0]>0); return {code,nome:lname(code),sup:LSUP[code]||'',a:t.a,v:t.v,d:t.d,n:st.n,u:st.u,ov:st.v,tk:st.n?st.tot/st.n:0,ns:ks.length,us:ks.reduce((s,x)=>s+x[0],0)}; })
     .filter(r=>r.code===L||r.n||r.ns>=5);
-  document.getElementById('ouiloj').innerHTML=`<thead><tr><th class="l">Loja</th><th class="l">Supervisora</th><th>Atend.</th><th>Cupons OUI</th><th>% atend.</th><th>Unid.</th><th>Venda OUI</th><th>Venda OUI/dia</th><th>% venda</th><th>Ticket cupom OUI</th><th>SKUs OUI c/ estoque</th><th>Unid. em estoque</th></tr></thead><tbody>`+
-    lj.map(r=>`<tr class="${r.code===L?'ohl':''}"><td class="l"><b>${esc(r.nome)}</b> <small style="display:inline">${r.code}</small></td><td class="l">${esc(r.sup)}</td><td>${int(r.a)}</td><td><b>${int(r.n)}</b></td><td>${pc(pct(r.n,r.a))}</td><td>${pcs(r.u)}</td><td>${r.ov?brl0(r.ov):'-'}</td><td>${r.ov?brl0(r.ov/(r.d||1)):'-'}</td><td>${pc(pct(r.ov,r.v))}</td><td>${r.n?brl0(r.tk):'-'}</td><td>${r.ns}</td><td>${int(r.us)}</td></tr>`).join('')+'</tbody>';
+  document.getElementById('ouiloj').innerHTML=`<thead><tr><th class="l">Loja</th><th class="l">Supervisora</th><th>Atend.</th><th>Cupons OUI</th><th>% atend.</th><th>Unid.</th><th>Venda OUI</th><th>Venda OUI/dia</th><th>Share (% venda)</th><th>% da meta 3,8%</th><th>Ticket cupom OUI</th><th>SKUs OUI c/ estoque</th><th>Unid. em estoque</th></tr></thead><tbody>`+
+    lj.map(r=>`<tr class="${r.code===L?'ohl':''}"><td class="l"><b>${esc(r.nome)}</b> <small style="display:inline">${r.code}</small></td><td class="l">${esc(r.sup)}</td><td>${int(r.a)}</td><td><b>${int(r.n)}</b></td><td>${pc(pct(r.n,r.a))}</td><td>${pcs(r.u)}</td><td>${r.ov?brl0(r.ov):'-'}</td><td>${r.ov?brl0(r.ov/(r.d||1)):'-'}</td><td><b>${pc(pct(r.ov,r.v))}</b></td><td class="${pct(r.ov,r.v)>=3.8?'okc':'warnc'}">${r.v?pc(pct(r.ov,r.v)/3.8*100):'-'}</td><td>${r.n?brl0(r.tk):'-'}</td><td>${r.ns}</td><td>${int(r.us)}</td></tr>`).join('')+'</tbody>';
   const ref=lj.filter(r=>r.code!==L&&r.ns>=5), refA=ref.reduce((t,r)=>t+r.a,0), refN=ref.reduce((t,r)=>t+r.n,0);
   document.getElementById('ouilojsum').innerHTML=ref.length? `Norte 2 <b>${pc(pct(S.n,T.a))}</b> dos atendimentos com OUI &middot; outras lojas OUI juntas <b>${pc(pct(refN,refA))}</b>` : '';
   lastOUI.lojas=lj;
@@ -2397,8 +2424,8 @@ XP['oui-cupons']=()=>lastOUI.cup&&{base:'oui-norte2-cupons_'+ouiArq(),periodo:ou
   ouiX('Marcas levadas junto',['Marca','Cupons','% dos cupons OUI','Unid.','Valor (R$)'],lastOUI.marcas.map(x=>[x.m,x.n.size,lastOUI.cup.length?x.n.size/lastOUI.cup.length:0,x.q,+x.v.toFixed(2)]),{money:[4],pct:[2],widths:[20,9,14,8,12]})]};
 XP['oui-estoque']=()=>lastOUI.st&&{base:'oui-norte2-estoque_'+ouiArq(),periodo:ouiPer()+' - estoque '+OUI.stock_data,sheets:[ouiX('Estoque OUI Norte 2',['SKU','Produto','Categoria','Fase','Estoque','Transito','Pedido pendente','Vendido','Media/dia','Cobertura (dias)','Status'],
   lastOUI.st.map(r=>[r.sku,r.nome,r.cat,r.fase,r.st[0],r.st[1],r.st[2],r.q,+r.md.toFixed(2),r.cb==null||r.cb===Infinity?'':Math.round(r.cb),{z:'zerou - repor',v:'vendendo',p:'parado',n:''}[r.stt]]),{widths:[8,40,20,11,8,8,10,8,9,12,14]})]};
-XP['oui-lojas']=()=>lastOUI.lojas&&{base:'oui-comparativo-lojas_'+ouiArq(),periodo:ouiPer(),sheets:[ouiX('Comparativo',['Codigo','Loja','Supervisora','Atend.','Cupons OUI','% atend.','Unid.','Venda OUI (R$)','Venda OUI/dia (R$)','% venda','Ticket cupom OUI (R$)','SKUs OUI c/ estoque','Unid. em estoque'],
-  lastOUI.lojas.map(r=>[r.code,r.nome,r.sup,r.a,r.n,r.a?r.n/r.a:0,r.u,+r.ov.toFixed(2),+(r.ov/(r.d||1)).toFixed(2),r.v?r.ov/r.v:0,+r.tk.toFixed(2),r.ns,r.us]),{money:[7,8,10],pct:[5,9],widths:[8,22,12,8,10,9,7,13,14,8,14,12,12]})]};
+XP['oui-lojas']=()=>lastOUI.lojas&&{base:'oui-comparativo-lojas_'+ouiArq(),periodo:ouiPer(),sheets:[ouiX('Comparativo',['Codigo','Loja','Supervisora','Atend.','Cupons OUI','% atend.','Unid.','Venda OUI (R$)','Venda OUI/dia (R$)','Share (% venda)','% da meta 3,8%','Ticket cupom OUI (R$)','SKUs OUI c/ estoque','Unid. em estoque'],
+  lastOUI.lojas.map(r=>[r.code,r.nome,r.sup,r.a,r.n,r.a?r.n/r.a:0,r.u,+r.ov.toFixed(2),+(r.ov/(r.d||1)).toFixed(2),r.v?r.ov/r.v:0,r.v?r.ov/r.v/0.038:0,+r.tk.toFixed(2),r.ns,r.us]),{money:[7,8,11],pct:[5,9,10],widths:[8,22,12,8,10,9,7,13,14,10,12,14,12,12]})]};
 XP['oui-sortimento']=()=>lastOUI.sort&&{base:'oui-sortimento-faltando-norte2',periodo:'estoque '+OUI.stock_data,sheets:[ouiX('Faltando na Norte 2',['#','SKU','Produto','Categoria','Fase','Lojas OUI com estoque','Unid. nessas lojas','Vendido nelas'],
   lastOUI.sort.map((g,i)=>[i+1,g.sku,g.nome,g.cat,g.fase,g.n,g.u,g.sold]),{widths:[5,8,40,20,11,12,12,10]})]};
 
